@@ -1,51 +1,38 @@
-# Copyright 2023 Comcast Cable Communications Management, LLC
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-# http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-#
-# SPDX-License-Identifier: Apache-2.0
-#
-
 cmake_minimum_required(VERSION 3.3)
 
-project(PackageManager)
+# Set the CMAKE_PREFIX_PATH
+if(NOT CMAKE_PREFIX_PATH)
+    set(CMAKE_PREFIX_PATH "${CMAKE_SOURCE_DIR}/../wpeframework/4.4-r0/image/usr/lib/cmake/WPEFramework")
+endif()
 
-# Ensure CMAKE_MODULE_PATH is set correctly before find_package
-list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/cmake")
+# Include the WPEFramework configuration
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_PREFIX_PATH}")
 
+# Find the WPEFramework package
 find_package(WPEFramework REQUIRED)
 
-# Define project version
-set(VERSION_MAJOR 1)
-set(VERSION_MINOR 0)
-set(VERSION_PATCH 0)
-set(PROJECT_VERSION ${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_PATCH})
+# Define the project
+project(PackageManager VERSION 1.0.0)
 
-# Set the module name
+# Set module name
 set(MODULE_NAME ${NAMESPACE}${PROJECT_NAME})
 message("Setup ${MODULE_NAME} v${PROJECT_VERSION}")
 
-# Plugin options
+# Include additional paths if necessary
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/cmake")
+
+# Set plugin options
 set(PLUGIN_PACKAGEMANAGER_AUTOSTART "true" CACHE STRING "Automatically start PackageManager plugin")
 set(PLUGIN_PACKAGEMANAGER_MODE "Off" CACHE STRING "Controls if the plugin should run in its own process, in process or remote.")
 set(PLUGIN_PACKAGEMANAGER_IMPLEMENTATION "ExternalService" CACHE STRING "Controls which implementation should be used for the PackageManager.")
 option(PLUGIN_PACKAGEMANAGER_EXAMPLES "Controls if the example code should be built." OFF)
 
-# Find necessary packages
+# Find necessary WPEFramework components
 find_package(${NAMESPACE}Plugins REQUIRED)
 find_package(${NAMESPACE}Definitions REQUIRED)
 find_package(CompileSettingsDebug CONFIG REQUIRED)
 
-# Add the PackageManager library
+# Add the library
 add_library(${MODULE_NAME} SHARED
     PackageManager.cpp
     Module.cpp)
@@ -55,29 +42,35 @@ set_target_properties(${MODULE_NAME} PROPERTIES
     CXX_STANDARD 11
     CXX_STANDARD_REQUIRED YES)
 
-# Link libraries
+# Link the necessary libraries
 target_link_libraries(${MODULE_NAME}
     PRIVATE
         CompileSettingsDebug::CompileSettingsDebug
         ${NAMESPACE}Plugins::${NAMESPACE}Plugins
         ${NAMESPACE}Definitions::${NAMESPACE}Definitions)
 
-# Select the implementation
+# Add source files based on the implementation choice
 if(PLUGIN_PACKAGEMANAGER_IMPLEMENTATION STREQUAL "Test")
-    target_sources(${MODULE_NAME} PRIVATE TestImplementation/TestImplementation.cpp)
+    target_sources(${MODULE_NAME}
+    PRIVATE
+        TestImplementation/TestImplementation.cpp)
 elseif(PLUGIN_PACKAGEMANAGER_IMPLEMENTATION STREQUAL "ExternalService")
-    target_sources(${MODULE_NAME} PRIVATE ExternalServiceImplementation/ExternalServiceImplementation.cpp)
+    target_sources(${MODULE_NAME}
+    PRIVATE
+        ExternalServiceImplementation/ExternalServiceImplementation.cpp)
 
     if(PLUGIN_PACKAGEMANAGER_EXAMPLES)
         add_subdirectory(ExternalServiceImplementation/ExampleClient)
     endif()
-else()
+else ()
     message(FATAL_ERROR "There is no valid implementation provided for the PackageManager")
-endif()
+endif ()
 
 # Install the target
 install(TARGETS ${MODULE_NAME}
     DESTINATION lib/${STORAGE_DIRECTORY}/plugins)
 
-# Generate configuration
-write_config()
+# Function to write configuration (if exists)
+if(COMMAND write_config)
+    write_config()
+endif()
