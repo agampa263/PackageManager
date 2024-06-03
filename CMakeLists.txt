@@ -9,7 +9,7 @@ endif()
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_PREFIX_PATH}")
 
 # Find the WPEFramework package
-find_package(WPEFramework REQUIRED)
+
 
 # Define the project
 project(PackageManager VERSION 1.0.0)
